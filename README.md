@@ -1,6 +1,6 @@
 ## Kotlin
 
-A very straightforward example of how kotlin and anko can be used to make an activity without any xml.
+A very straightforward example of how kotlin and anko can be used to make an activity without any xml layouts.
 
 ## KotlinRetrofit
 
