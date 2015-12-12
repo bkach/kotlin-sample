@@ -13,7 +13,7 @@ import rx.Observable
  */
 interface RedditRetrofitInterface {
 
-    @GET("/r/gifs.json")
+    @GET("/r/gifs.json?limit=500")
     fun getRedditGifsFrontPage(): Observable<RedditResponse>
 
 
