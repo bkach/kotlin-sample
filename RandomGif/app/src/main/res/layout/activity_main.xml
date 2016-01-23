@@ -5,21 +5,34 @@
     android:layout_height="match_parent"
     tools:context="app.com.boris.android.randomgif.MainActivity">
 
-    <RelativeLayout
+    <FrameLayout
         android:layout_width="match_parent"
         android:layout_height="match_parent">
 
-        <VideoView
+        <!-- Video View -->
+        <app.com.boris.android.randomgif.CustomVideoView
             android:id="@+id/vid_view"
-            android:layout_gravity="center"
-            android:layout_alignParentRight="true"
-            android:layout_alignParentLeft="true"
-            android:layout_alignParentTop="true"
-            android:layout_alignParentBottom="true"
+            android:layout_gravity="center_vertical"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content" />
 
-    </RelativeLayout>
+        <!-- Progress Bar -->
+
+        <FrameLayout
+            android:layout_width="match_parent"
+            android:layout_height="match_parent">
+
+            <ProgressBar
+                android:id="@+id/progress_bar"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_gravity="center_horizontal|center_vertical"
+                style="@android:style/Widget.ProgressBar.Small"/>
+
+        </FrameLayout>
+
+
+    </FrameLayout>
 
 
 </LinearLayout>
