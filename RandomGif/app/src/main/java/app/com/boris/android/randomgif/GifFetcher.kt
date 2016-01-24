@@ -1,5 +1,6 @@
 package app.com.boris.android.randomgif
 
+import app.com.boris.android.randomgif.response.RedditResponse
 import app.com.boris.android.randomgif.retrofit.GfycatRetrofitInterface
 import app.com.boris.android.randomgif.retrofit.RedditRetrofitInterface
 import rx.Observable
@@ -10,7 +11,7 @@ import java.net.URL
 /**
  * Created by bkach on 12/12/15.
  */
-class GifFetcher(onLoadMp4Urls: (videos : List<GifFetcher.Video>) -> Unit) {
+class GifFetcher() {
 
     val retrofit = RedditRetrofitInterface.create()
     val gfycat = GfycatRetrofitInterface.create()
@@ -20,47 +21,73 @@ class GifFetcher(onLoadMp4Urls: (videos : List<GifFetcher.Video>) -> Unit) {
         var currentGif = 0
     }
 
-    init {
-        getURLList(onLoadMp4Urls)
+    public fun onVideosPreparedListener(callback: (videos : List<Video>) -> Unit){
+        getVideos(callback);
     }
 
-    private fun getURLList(callback: (videos : List<Video>) -> Unit) {
-        retrofit.getRedditGifsFrontPage(5)
+    private fun getVideos(callback: (videos : List<Video>) -> Unit) {
+        retrofit.getRedditGifsFrontPage(20)
             .subscribeOn(Schedulers.io())
             .observeOn(Schedulers.io())
             .flatMap { redditResponse ->
-
-                var videos: MutableList<Video> = arrayListOf();
-
-                redditResponse.data.children.forEach { child ->
-                    var url = URL(child.data.url)
-                    var width = child.data.media_embed.width
-                    var height = child.data.media_embed.height
-                    var fullPath = "${url.host + url.path}"
-                    if (url.host.contains("imgur")) {
-                        val id = fullPath.substring(
-                                fullPath.indexOf(".com/") + 5,
-                                fullPath.indexOf(".gif")
-                        )
-                        videos.add(Video("i.imgur.com/$id.gif", width, height))
-                    }
-                }
-
-                Observable.just(videos.toList());
-            }
-            .subscribe({ videos ->
-                videos.map { video ->
-                    gfycat.getGfycatConversionURL(video.url)
-                        .subscribeOn(Schedulers.io())
-                        .observeOn(AndroidSchedulers.mainThread())
-                        .subscribe({ gfycatUrl -> video.url = gfycatUrl.mp4Url},
-                                   { error -> error.printStackTrace() })
-                }
-                this.videos = videos;
-            }, { error -> error.printStackTrace() }, {
-                callback(videos)
-            })
+                Observable.just(
+                    redditResponseToVideos(redditResponse)
+                ) }
+            .subscribe({ videos -> addGfycatURL(videos, callback) },
+                       { error -> error.printStackTrace() })
     }
 
-    class Video(var url: String, val width: Int, val height: Int){}
+    private fun addGfycatURL(videos: List<GifFetcher.Video>,
+                             callback: (videos: List<Video>) -> Unit) {
+        videos.map { video ->
+            gfycat.getGfycatConversionURL(video.imgurUrl)
+                    .subscribeOn(Schedulers.io())
+                    .observeOn(AndroidSchedulers.mainThread())
+                    .subscribe({ gfycatUrl ->
+                        video.gfyUrl = gfycatUrl.mp4Url
+                        if (Video.numLoadedVideos == videos.size) {
+                            callback(videos);
+                        }
+                    },
+                            { error -> error.printStackTrace() })
+        }
+        this.videos = videos;
+    }
+
+    private fun redditResponseToVideos(response: RedditResponse) : List<Video> {
+        var videos: MutableList<Video> = arrayListOf()
+        response.data.children.forEach { child ->
+            val url = URL(child.data.url)
+            val width = child.data.media_embed.width
+            val height = child.data.media_embed.height
+            val gifId = child.data.id
+
+            if (url.host.contains("imgur")) {
+                val imgurID = getImgurIDFromURL("${url.host + url.path}")
+                videos.add(Video("i.imgur.com/$imgurID.gif", gifId, width, height))
+            }
+        }
+        return videos.toList()
+    }
+
+    private fun getImgurIDFromURL(path: String): Any {
+        return path.substring(
+                path.indexOf(".com/") + 5,
+                path.indexOf(".gif")
+        )
+    }
+
+    class Video(var imgurUrl: String, val id: String, val width: Int, val height: Int){
+
+        companion object {
+            var numLoadedVideos: Int = 0;
+        }
+
+        var gfyUrl: String = ""
+            set(value) {
+                field = value;
+                numLoadedVideos++
+            }
+
+    }
 }

@@ -12,6 +12,7 @@ class MainActivity : AppCompatActivity() {
 
     var vidView : CustomVideoView? = null
     var progressBar : ProgressBar? = null
+    val gifFetcher : GifFetcher = GifFetcher()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -29,7 +30,7 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun fetchAndDisplayGifs() {
-        GifFetcher { videos ->
+        gifFetcher.onVideosPreparedListener { videos ->
 
             vidView?.setOnTouchListener(getNextVideoTouchListener(videos))
 
@@ -56,7 +57,7 @@ class MainActivity : AppCompatActivity() {
                     vidView?.stopPlayback()
                     vidView?.setVideoSize(videos[GifFetcher.currentGif].width,
                             videos[GifFetcher.currentGif].height)
-                    vidView?.setVideoURI(Uri.parse(videos[GifFetcher.currentGif].url))
+                    vidView?.setVideoURI(Uri.parse(videos[GifFetcher.currentGif].gfyUrl))
                 }
             }
             super.onTouchEvent(motionEvent)
@@ -64,6 +65,7 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun defaultTouchListener() : View.OnTouchListener {
-        return View.OnTouchListener { v, motionEvent -> false }
+        return View.OnTouchListener { v, motionEvent ->
+            false }
     }
 }

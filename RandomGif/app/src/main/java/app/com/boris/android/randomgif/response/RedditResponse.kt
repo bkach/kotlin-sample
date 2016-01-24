@@ -6,7 +6,7 @@ package app.com.boris.android.randomgif.response
 class RedditResponse(val data : RedditResponse.Data) {
     class Data(val children: List<Data.Children>) {
         class Children(val data : Children.Data) {
-            class Data(val url : String, val media_embed : Data.MediaEmbed) {
+            class Data(val url : String, val media_embed : Data.MediaEmbed, val id: String) {
                 class MediaEmbed(val width : Int, val height : Int){
 
                 }
