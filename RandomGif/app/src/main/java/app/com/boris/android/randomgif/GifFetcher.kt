@@ -1,8 +1,8 @@
 package app.com.boris.android.randomgif
 
-import app.com.boris.android.randomgif.response.RedditResponse
-import app.com.boris.android.randomgif.retrofit.GfycatRetrofitInterface
-import app.com.boris.android.randomgif.retrofit.RedditRetrofitInterface
+import app.com.boris.android.randomgif.networking.response.RedditResponse
+import app.com.boris.android.randomgif.networking.retrofit.GfycatRetrofitInterface
+import app.com.boris.android.randomgif.networking.retrofit.RedditRetrofitInterface
 import rx.Observable
 import rx.android.schedulers.AndroidSchedulers
 import rx.schedulers.Schedulers
@@ -26,7 +26,7 @@ class GifFetcher() {
     }
 
     private fun getVideos(callback: (videos : List<Video>) -> Unit) {
-        retrofit.getRedditGifsFrontPage(20)
+        retrofit.getGifsFrontPage(20)
             .subscribeOn(Schedulers.io())
             .observeOn(Schedulers.io())
             .flatMap { redditResponse ->
@@ -56,7 +56,7 @@ class GifFetcher() {
 
     private fun redditResponseToVideos(response: RedditResponse) : List<Video> {
         var videos: MutableList<Video> = arrayListOf()
-        response.data.children.forEach { child ->
+        response.data.children.forEach { child : RedditResponse.Data.Child ->
             val url = URL(child.data.url)
             val width = child.data.media_embed.width
             val height = child.data.media_embed.height

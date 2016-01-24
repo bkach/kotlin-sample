@@ -1,6 +1,6 @@
-package app.com.boris.android.randomgif.retrofit
+package app.com.boris.android.randomgif.networking.retrofit
 
-import app.com.boris.android.randomgif.response.GfycatResponse
+import app.com.boris.android.randomgif.networking.response.GfycatResponse
 import com.squareup.okhttp.OkHttpClient
 import com.squareup.okhttp.logging.HttpLoggingInterceptor
 import retrofit.GsonConverterFactory
@@ -23,7 +23,7 @@ interface GfycatRetrofitInterface{
         fun create() : GfycatRetrofitInterface {
 
             val logging = HttpLoggingInterceptor();
-            logging.setLevel(HttpLoggingInterceptor.Level.BODY);
+            logging.setLevel(HttpLoggingInterceptor.Level.NONE);
 
             val httpClient = OkHttpClient()
             httpClient.interceptors().add(logging);
