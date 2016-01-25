@@ -18,49 +18,39 @@ class GifData() {
 
     companion object {
         var currentlyRequesting = false
+        val gifs: MutableList<Gif> = arrayListOf();
     }
 
     val reddit = RedditRetrofitInterface.create()
     val gfycat = GfycatRetrofitInterface.create()
-    val NUM_REDDIT_REQUESTS = 1;
-    val gifs: MutableList<Gif> = arrayListOf();
-    val callbacks: MutableList<IndexedCallback> = arrayListOf();
+    val NUM_RESULTS = 10;
 
-    val available: Semaphore = Semaphore(1, true);
-
-    fun getGif(position: Int, callback: (gif : Gif) -> Unit) {
-        if (gifs.size <= position || gifs.size == 0) {
-            callbacks.add(IndexedCallback(position,callback));
-            requestMoreResults()
+    fun getData(callback: () -> Unit) {
+        var redditObservable : Observable<RedditResponse>
+        if (gifs.size == 0) {
+            redditObservable = this.reddit.getGifsFrontPage(NUM_RESULTS)
         } else {
-            callback(gifs[position])
+            redditObservable = this.reddit.getGifsFrontPage(NUM_RESULTS, gifs[gifs.size-1].id)
+            print(gifs[gifs.size-1].id)
         }
-    }
-
-    fun requestMoreResults() {
-        if (!currentlyRequesting) {
-            currentlyRequesting = true;
-
-            var getRedditObservable : Observable<RedditResponse>;
-            if(gifs.size == 0) {
-                getRedditObservable = this.reddit.getGifsFrontPage(NUM_REDDIT_REQUESTS)
-            } else {
-                getRedditObservable = this.reddit.getGifsFrontPage(NUM_REDDIT_REQUESTS, gifs[gifs.size-1].id)
-            }
-
-            getRedditObservable
+            redditObservable
                 .subscribeOn(Schedulers.io())
                 .observeOn(AndroidSchedulers.mainThread())
                 .flatMap {
                     var gfycatObservables = parseRedditResponse(it)
                     Observable.merge(gfycatObservables)
                 }
-                .subscribe { gif ->
-                    gifs.add(gif);
-                    runThroughCallbacks();
-                    currentlyRequesting = false;
-                }
-        }
+                .subscribe( { gif ->
+                    gifs.add(gif)               // Success
+                }, { error ->
+                    error.printStackTrace()     // Failure
+                }, {
+                    callback();                 // Completed
+                })
+    }
+
+    fun getGif(position: Int, callback: (Gif) -> Unit) {
+        callback(gifs[position])
     }
 
     private fun parseRedditResponse(redditResponse: RedditResponse): List<Observable<Gif>> {
@@ -80,31 +70,18 @@ class GifData() {
                     val imgurID = getImgurIDFromURL("${imgurURL.host + imgurURL.path}")
                     val gifURL = "i.imgur.com/$imgurID.gif"
                     gfycatObservables.add(
-                            gfycat.getGfycatConversionURL(gifURL)
-                                    .subscribeOn(Schedulers.io())
-                                    .observeOn(AndroidSchedulers.mainThread())
-                                    .map { gfycatResponse ->
-                                        Gif(Gif.Thumbnail(thumbnailURL, thumbnailWidth, thumbnailHeight),
-                                                gfycatResponse.mp4Url, gifId, width, height)
-                                    }
+                        gfycat.getGfycatConversionURL(gifURL)
+                            .subscribeOn(Schedulers.io())
+                            .observeOn(AndroidSchedulers.mainThread())
+                            .map { gfycatResponse ->
+                                Gif(Gif.Thumbnail(thumbnailURL, thumbnailWidth, thumbnailHeight),
+                                    gfycatResponse.mp4Url, gifId, width, height)
+                            }
                     )
                 }
             }
         }
         return gfycatObservables.toList();
-    }
-
-    private fun runThroughCallbacks() {
-        val indicesToRemove : MutableList<Int> = arrayListOf();
-        for ((index,indexedCallback) in this.callbacks.withIndex()) {
-            if (indexedCallback.position <= gifs.size -1) {
-                indicesToRemove.add(index);
-                indexedCallback.callback(gifs[indexedCallback.position])
-            }
-        }
-        for (index in indicesToRemove){
-            this.callbacks.removeAt(index);
-        }
     }
 
     private fun getImgurIDFromURL(path: String): Any {

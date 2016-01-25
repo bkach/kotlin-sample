@@ -12,9 +12,7 @@ import com.squareup.picasso.Picasso
  * Created by bkach on 1/24/16.
  */
 
-class RecyclerViewAdapter : RecyclerView.Adapter<RecyclerViewAdapter.ViewHolder>() {
-
-    val data = GifData();
+class RecyclerViewAdapter(val data: GifData) : RecyclerView.Adapter<RecyclerViewAdapter.ViewHolder>() {
 
     inner class ViewHolder(itemView: View) : RecyclerView.ViewHolder(itemView) {
 
@@ -40,7 +38,7 @@ class RecyclerViewAdapter : RecyclerView.Adapter<RecyclerViewAdapter.ViewHolder>
     }
 
     override fun getItemCount(): Int {
-        return 10000
+        return GifData.gifs.size;
     }
 
     override fun onCreateViewHolder(parent: ViewGroup?, viewType: Int): ViewHolder? {
