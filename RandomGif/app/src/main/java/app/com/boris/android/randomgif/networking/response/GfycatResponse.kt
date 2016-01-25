@@ -1,4 +1,4 @@
-package app.com.boris.android.randomgif.response
+package app.com.boris.android.randomgif.networking.response
 
 /**
  * Created by bkach on 12/12/15.

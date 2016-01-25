@@ -1,6 +1,6 @@
-package app.com.boris.android.randomgif.retrofit
+package app.com.boris.android.randomgif.networking.retrofit
 
-import app.com.boris.android.randomgif.response.RedditResponse
+import app.com.boris.android.randomgif.networking.response.RedditResponse
 import com.squareup.okhttp.OkHttpClient
 import com.squareup.okhttp.logging.HttpLoggingInterceptor
 import retrofit.GsonConverterFactory
@@ -17,13 +17,17 @@ import java.util.logging.Level
 interface RedditRetrofitInterface {
 
     @GET("gifs.json")
-    fun getRedditGifsFrontPage(@Query("limit") limit : Int): Observable<RedditResponse>
+    fun getGifsFrontPage(@Query("limit") limit : Int): Observable<RedditResponse>
+
+    @GET("gifs.json")
+    fun getGifsFrontPage(@Query("limit") limit : Int,
+                               @Query("after") id : String): Observable<RedditResponse>
 
 
     companion object {
         fun create() : RedditRetrofitInterface {
             val logging = HttpLoggingInterceptor();
-            logging.setLevel(HttpLoggingInterceptor.Level.BODY);
+            logging.setLevel(HttpLoggingInterceptor.Level.NONE);
 
             val httpClient = OkHttpClient()
             httpClient.interceptors().add(logging);
