@@ -1,5 +1,6 @@
 package app.com.boris.android.randomgif
 
+import android.net.Uri
 import android.support.v7.widget.RecyclerView
 import android.view.LayoutInflater
 import android.view.View
@@ -16,8 +17,8 @@ class RecyclerViewAdapter(val data: GifData) : RecyclerView.Adapter<RecyclerView
 
     inner class ViewHolder(itemView: View) : RecyclerView.ViewHolder(itemView) {
 
-        var videoView: CustomVideoView? = null
-        var imageView: ImageView? = null
+        var videoView: CustomVideoView
+        var imageView: ImageView
 
         init {
             this.videoView = itemView.findViewById(R.id.video_view) as CustomVideoView;
@@ -26,13 +27,29 @@ class RecyclerViewAdapter(val data: GifData) : RecyclerView.Adapter<RecyclerView
     }
 
     override fun onBindViewHolder(holder: ViewHolder, position: Int) {
-        holder.videoView?.visibility = View.INVISIBLE;
-        holder.imageView?.visibility = View.VISIBLE;
+        holder.videoView?.visibility = View.INVISIBLE
+        holder.imageView?.visibility = View.VISIBLE
 
         data.getGif(position, { gif ->
             Picasso.with(holder.imageView?.context)
                     .load(gif.thumbnail.url)
                     .into(holder.imageView)
+
+            holder.videoView.setVideoSize(gif.width,gif.height)
+            holder.imageView?.setOnClickListener{
+
+                holder.videoView.visibility = View.VISIBLE
+                holder.imageView.visibility = View.INVISIBLE
+
+                data.getGifMP4URL(gif, { MP4URL ->
+                    holder.videoView.setVideoURI(Uri.parse(MP4URL))
+                    holder.videoView.setOnPreparedListener { mediaPlayer ->
+                        holder.videoView.start()
+                        mediaPlayer.isLooping = true
+
+                    }
+                })
+            }
         })
 
     }

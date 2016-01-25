@@ -17,13 +17,12 @@ import java.util.concurrent.Semaphore
 class GifData() {
 
     companion object {
-        var currentlyRequesting = false
         val gifs: MutableList<Gif> = arrayListOf();
     }
 
     val reddit = RedditRetrofitInterface.create()
     val gfycat = GfycatRetrofitInterface.create()
-    val NUM_RESULTS = 10;
+    val NUM_RESULTS = 50;
 
     fun getData(callback: () -> Unit) {
         var redditObservable : Observable<RedditResponse>
@@ -31,21 +30,16 @@ class GifData() {
             redditObservable = this.reddit.getGifsFrontPage(NUM_RESULTS)
         } else {
             redditObservable = this.reddit.getGifsFrontPage(NUM_RESULTS, gifs[gifs.size-1].id)
-            print(gifs[gifs.size-1].id)
         }
             redditObservable
                 .subscribeOn(Schedulers.io())
                 .observeOn(AndroidSchedulers.mainThread())
-                .flatMap {
-                    var gfycatObservables = parseRedditResponse(it)
-                    Observable.merge(gfycatObservables)
-                }
-                .subscribe( { gif ->
-                    gifs.add(gif)               // Success
+                .subscribe( { redditResponse ->
+                    parseRedditResponse(redditResponse)     // Success
                 }, { error ->
-                    error.printStackTrace()     // Failure
+                    error.printStackTrace()                 // Failure
                 }, {
-                    callback();                 // Completed
+                    callback();                             // Completed
                 })
     }
 
@@ -53,14 +47,12 @@ class GifData() {
         callback(gifs[position])
     }
 
-    private fun parseRedditResponse(redditResponse: RedditResponse): List<Observable<Gif>> {
-        var gfycatObservables: MutableList<Observable<Gif>> = arrayListOf()
-
+    private fun parseRedditResponse(redditResponse: RedditResponse) {
         redditResponse.data.children.forEach { child ->
             if (child.data.media != null) {
                 val width = child.data.media_embed.width
                 val height = child.data.media_embed.height
-                val gifId = child.data.id
+                val gifId = child.data.name
                 val thumbnailURL = child.data.media.oembed.thumbnail_url
                 val thumbnailWidth = child.data.media.oembed.thumbnail_width
                 val thumbnailHeight = child.data.media.oembed.thumbnail_height
@@ -69,19 +61,13 @@ class GifData() {
                 if (imgurURL.host.contains("imgur")) {
                     val imgurID = getImgurIDFromURL("${imgurURL.host + imgurURL.path}")
                     val gifURL = "i.imgur.com/$imgurID.gif"
-                    gfycatObservables.add(
-                        gfycat.getGfycatConversionURL(gifURL)
-                            .subscribeOn(Schedulers.io())
-                            .observeOn(AndroidSchedulers.mainThread())
-                            .map { gfycatResponse ->
-                                Gif(Gif.Thumbnail(thumbnailURL, thumbnailWidth, thumbnailHeight),
-                                    gfycatResponse.mp4Url, gifId, width, height)
-                            }
+                    gifs.add(
+                            Gif(gifId, Gif.Thumbnail(thumbnailURL, thumbnailWidth, thumbnailHeight),
+                                    gifURL, width, height)
                     )
                 }
             }
         }
-        return gfycatObservables.toList();
     }
 
     private fun getImgurIDFromURL(path: String): Any {
@@ -91,13 +77,18 @@ class GifData() {
         )
     }
 
-    data class Gif(val thumbnail: Gif.Thumbnail,
-                   val videoURL: String,
-                   val id: String,
+    data class Gif(val id: String,
+                   val thumbnail: Gif.Thumbnail,
+                   var videoURL: String,
                    val width: Int,
                    val height: Int) {
         data class Thumbnail(val url: String, val width: Int, val height: Int)
     }
 
-    data class IndexedCallback(val position: Int, val callback: (Gif) -> Unit)
+    fun getGifMP4URL(gif : Gif, callback: (String) -> Unit) {
+        gfycat.getGfycatConversionURL(gif.videoURL)
+                .subscribeOn(Schedulers.io())
+                .observeOn(AndroidSchedulers.mainThread())
+                .subscribe { callback(it.mp4Url) }
+    }
 }
